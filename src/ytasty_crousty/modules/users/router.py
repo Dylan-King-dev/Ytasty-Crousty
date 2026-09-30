@@ -1,17 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-import hashlib
 
 from ytasty_crousty.database import get_db
 from ytasty_crousty.modules.users.models import User
 from ytasty_crousty.modules.users.schemas import UserCreate, UserResponse
 from ytasty_crousty.modules.auths.dependencies import allow_admin
+from ytasty_crousty.modules.auths.security import hash_password
 
 router = APIRouter(prefix="/users", tags=["Users"])
-
-
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=UserResponse)
