@@ -35,6 +35,11 @@ class Order(Base):
 
     restaurant = relationship("Restaurant", back_populates="orders")
     items = relationship("OrderItem", back_populates="order")
+    @property
+
+    def customer(self):
+        """Regroupe nom et email pour correspondre au schéma OrderResponse."""
+        return {"name": self.customer_name, "email": self.customer_email}
 
 class OrderItem(Base):
     __tablename__ = "order_items"
