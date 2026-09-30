@@ -1,4 +1,6 @@
+import type { Product } from '../../types/api'
+
 export interface CartLine {
-	productId: number
-	quantity: number
+  product: Product
+  quantity: number
 }
