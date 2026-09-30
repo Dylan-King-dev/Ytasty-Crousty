@@ -5,7 +5,8 @@ from datetime import timedelta
 
 from ytasty_crousty.database import get_db
 from ytasty_crousty.modules.users.models import User
-from ytasty_crousty.modules.auths.security import verify_password, create_access_token
+from ytasty_crousty.modules.auths.security import verify_password
+from ytasty_crousty.modules.auths.jwt import create_access_token
 from ytasty_crousty.modules.auths.schemas import LoginRequest
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
