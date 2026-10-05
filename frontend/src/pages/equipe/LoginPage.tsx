@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom'
 import { login } from '../../api/auth.api'
 import { useAppDispatch } from '../../app/hooks'
 import { setToken } from '../../features/auth/authSlice'
+import { selectRestaurant } from '../../features/restaurant/restaurantSlice'
 
 export function LoginPage() {
   const dispatch = useAppDispatch()
@@ -28,6 +29,9 @@ export function LoginPage() {
     try {
       const response = await login(username, password)
       dispatch(setToken(response.data.access_token))
+      if (response.data.restaurant_id !== null) {
+        dispatch(selectRestaurant(response.data.restaurant_id))
+      }
       navigate('/cuisine')
     } catch {
       setError('Identifiants incorrects.')

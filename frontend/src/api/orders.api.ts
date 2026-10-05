@@ -1,5 +1,5 @@
 import { api } from './client'
-import type { CreateOrder, Order } from '../types/api'
+import type { CreateOrder, Order, OrderStatus } from '../types/api'
 
 export function createOrder(order: CreateOrder) {
   return api.post<Order>('/orders', order)
@@ -9,6 +9,16 @@ export function getOrder(orderNumber: string) {
   return api.get<Order>(`/orders/${orderNumber}`)
 }
 
-export function getRestaurantOrders(restaurantId: number) {
-  return api.get<Order[]>(`/restaurants/${restaurantId}/orders`)
+export function getRestaurantOrders(restaurantId: number, token: string) {
+  return api.get<Order[]>(`/restaurants/${restaurantId}/orders`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+}
+
+export function updateOrderStatus(orderNumber: string, status: OrderStatus, token: string) {
+  return api.patch<Order>(
+    `/orders/${orderNumber}/status`,
+    { status },
+    { headers: { Authorization: `Bearer ${token}` } },
+  )
 }

@@ -71,6 +71,8 @@ export interface LoginRequest {
 export interface TokenResponse {
   access_token: string
   token_type: string
+  role: Role
+  restaurant_id: number | null
 }
 
 export interface UserCreate {

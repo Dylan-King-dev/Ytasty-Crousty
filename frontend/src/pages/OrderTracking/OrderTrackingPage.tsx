@@ -9,7 +9,9 @@ import {
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getOrder } from '../../api/orders.api'
+import { apiBaseUrl } from '../../api/client'
 import type { Order, OrderStatus } from '../../types/api'
+import { io } from 'socket.io-client'
 
 const statuses: OrderStatus[] = [
   'pending',
@@ -87,6 +89,45 @@ export function OrderTrackingPage() {
 
     loadOrder(orderNumber)
   }, [orderNumber])
+
+  useEffect(() => {
+    if (!order?.order_number) {
+      return
+    }
+
+    const socket = io(apiBaseUrl)
+    const currentOrderNumber = order.order_number
+
+    socket.on('connect', () => {
+      socket.emit('order:join', { order_number: currentOrderNumber })
+    })
+
+    socket.on(
+      'order:status',
+      (update: { order_number: string; status: OrderStatus }) => {
+        if (update.order_number !== currentOrderNumber) {
+          return
+        }
+
+        setOrder((currentOrder) =>
+          currentOrder
+            ? { ...currentOrder, status: update.status }
+            : currentOrder,
+        )
+      },
+    )
+
+    return () => {
+      socket.emit('order:leave', { order_number: currentOrderNumber })
+      socket.disconnect()
+    }
+  }, [order?.order_number])
+
+  useEffect(() => {
+    if (order) {
+      localStorage.setItem('ytasty_last_order', JSON.stringify(order))
+    }
+  }, [order])
 
   const handleSearch = async () => {
     await loadOrder(search)
