@@ -13,8 +13,10 @@ import {
   Typography,
 } from '@mui/material'
 import type { SelectChangeEvent } from '@mui/material'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../app/hooks'
+import { logout } from '../../features/auth/authSlice'
+import { clearCart } from '../../features/cart/cartSlice'
 import { selectRestaurant } from '../../features/restaurant/restaurantSlice'
 import { getRestaurants } from '../../api/restaurants.api'
 import type { Restaurant } from '../../types/api'
@@ -25,7 +27,9 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const dispatch = useAppDispatch()
+  const navigate = useNavigate()
   const selectedId = useAppSelector((state) => state.restaurant.selectedId)
+  const { token, username, role } = useAppSelector((state) => state.auth)
   const cartItems = useAppSelector((state) => state.cart.items)
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0)
@@ -45,7 +49,28 @@ export function AppLayout({ children }: AppLayoutProps) {
   const activeRestaurant = restaurants.find((restaurant) => restaurant.id === selectedId)
 
   const handleRestaurantChange = (event: SelectChangeEvent<number>) => {
-    dispatch(selectRestaurant(Number(event.target.value)))
+    const nextRestaurantId = Number(event.target.value)
+    const cartRestaurantId = cartItems[0]?.product.restaurant_id
+
+    if (cartRestaurantId && cartRestaurantId !== nextRestaurantId) {
+      const confirmed = window.confirm(
+        'Changer de restaurant va vider votre panier. Continuer ?',
+      )
+      if (!confirmed) {
+        return
+      }
+      dispatch(clearCart())
+    }
+
+    dispatch(selectRestaurant(nextRestaurantId))
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('ytasty_access_token')
+    localStorage.removeItem('ytasty_username')
+    localStorage.removeItem('ytasty_role')
+    dispatch(logout())
+    navigate('/')
   }
 
   return (
@@ -73,7 +98,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               value={restaurants.some((restaurant) => restaurant.id === selectedId) ? selectedId : ''}
               label="Restaurant"
               onChange={handleRestaurantChange}
-              disabled={restaurants.length === 0}
+              disabled={restaurants.length === 0 || role === 'staff'}
             >
               {restaurants.map((restaurant) => (
                 <MenuItem key={restaurant.id} value={restaurant.id}>
@@ -104,9 +129,28 @@ export function AppLayout({ children }: AppLayoutProps) {
             Panier {cartCount > 0 ? `(${cartCount})` : ''}
           </Button>
 
-          <Button color="inherit" component={Link} to="/login">
-            Équipe
-          </Button>
+          {token ? (
+            <>
+              <Chip label={`${username} · ${role}`} size="small" />
+              {role === 'staff' && (
+                <Button color="inherit" component={Link} to="/cuisine">
+                  Cuisine
+                </Button>
+              )}
+              {role !== null && (
+                <Button color="inherit" component={Link} to="/administration">
+                  Gestion
+                </Button>
+              )}
+              <Button color="inherit" onClick={handleLogout}>
+                Déconnexion
+              </Button>
+            </>
+          ) : (
+            <Button color="inherit" component={Link} to="/login">
+              Connexion équipe
+            </Button>
+          )}
         </Toolbar>
       </AppBar>
 

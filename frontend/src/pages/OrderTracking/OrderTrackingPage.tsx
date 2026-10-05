@@ -2,6 +2,7 @@ import {
   Box,
   Button,
   Paper,
+  Divider,
   Stack,
   TextField,
   Typography,
@@ -12,15 +13,7 @@ import { getOrder } from '../../api/orders.api'
 import { apiBaseUrl } from '../../api/client'
 import type { Order, OrderStatus } from '../../types/api'
 import { io } from 'socket.io-client'
-
-const statuses: OrderStatus[] = [
-  'pending',
-  'validated',
-  'preparing',
-  'ready',
-  'collected',
-  'cancelled',
-]
+import { OrderStepper } from '../../components/orders/OrderStepper'
 
 export function OrderTrackingPage() {
   const { orderNumber } = useParams()
@@ -160,8 +153,6 @@ export function OrderTrackingPage() {
     )
   }
 
-  const currentIndex = statuses.indexOf(order.status)
-
   return (
     <Box sx={{ p: 4 }}>
       <Typography variant="h4" gutterBottom>
@@ -200,27 +191,15 @@ export function OrderTrackingPage() {
             <strong>Statut actuel :</strong> {order.status}
           </Typography>
 
-          <Stack spacing={1}>
-            {statuses.map((status, index) => {
-              const active = status === order.status
-              const passed = index <= currentIndex
-
-              return (
-                <Box
-                  key={status}
-                  sx={{
-                    p: 1,
-                    borderRadius: 1,
-                    backgroundColor: active ? '#f5b700' : passed ? '#dff5c4' : '#f2f2f2',
-                    color: '#000',
-                    fontWeight: active ? 700 : 500,
-                  }}
-                >
-                  {status}
-                </Box>
-              )
-            })}
-          </Stack>
+          <OrderStepper status={order.status} />
+          <Divider />
+          <Typography variant="h6">Récapitulatif</Typography>
+          {order.items.map((item) => (
+            <Typography key={item.product_id}>
+              {item.product_name ?? `Produit #${item.product_id}`} × {item.quantity}
+            </Typography>
+          ))}
+          <Typography><strong>Total :</strong> {order.total_price.toFixed(2)} €</Typography>
         </Stack>
       </Paper>
     </Box>

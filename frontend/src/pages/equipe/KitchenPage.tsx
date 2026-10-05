@@ -5,7 +5,11 @@ import {
   Button,
   Chip,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   Typography,
 } from '@mui/material'
@@ -47,6 +51,13 @@ export function KitchenPage() {
   const [updatingOrder, setUpdatingOrder] = useState('')
   const [refresh, setRefresh] = useState(0)
   const [realtimeConnected, setRealtimeConnected] = useState(false)
+  const [statusFilter, setStatusFilter] = useState('active')
+  const [currentTime, setCurrentTime] = useState(Date.now())
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentTime(Date.now()), 30000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -85,6 +96,12 @@ export function KitchenPage() {
   }, [restaurantId, token, refresh])
 
   const orderNumbers = orders.map((order) => order.order_number).join(',')
+  const visibleOrders = orders.filter((order) => {
+    if (statusFilter === 'active') {
+      return ['pending', 'validated', 'preparing', 'ready'].includes(order.status)
+    }
+    return statusFilter === 'all' || order.status === statusFilter
+  })
 
   useEffect(() => {
     if (!token || !orderNumbers) {
@@ -170,15 +187,35 @@ export function KitchenPage() {
       </Stack>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      <FormControl size="small" sx={{ mb: 2, minWidth: 220 }}>
+        <InputLabel id="order-status-filter">Filtrer les commandes</InputLabel>
+        <Select
+          labelId="order-status-filter"
+          value={statusFilter}
+          label="Filtrer les commandes"
+          onChange={(event) => setStatusFilter(event.target.value)}
+        >
+          <MenuItem value="active">Commandes en cours</MenuItem>
+          <MenuItem value="all">Toutes les commandes</MenuItem>
+          <MenuItem value="pending">En attente</MenuItem>
+          <MenuItem value="preparing">En préparation</MenuItem>
+          <MenuItem value="ready">Prêtes</MenuItem>
+          <MenuItem value="collected">Récupérées</MenuItem>
+          <MenuItem value="cancelled">Annulées</MenuItem>
+        </Select>
+      </FormControl>
       {loading ? (
         <CircularProgress />
-      ) : orders.length === 0 ? (
+      ) : visibleOrders.length === 0 ? (
         <Alert severity="info">Aucune commande pour ce restaurant.</Alert>
       ) : (
         <Stack spacing={2}>
-          {orders.map((order) => {
+          {visibleOrders.map((order) => {
             const followingStatus = nextStatus[order.status]
             const isUpdating = updatingOrder === order.order_number
+            const waitingMinutes = Math.floor(
+              (currentTime - new Date(order.created_at).getTime()) / 60000,
+            )
 
             return (
               <Paper key={order.order_number} sx={{ p: 3 }}>
@@ -192,7 +229,7 @@ export function KitchenPage() {
                     <Typography variant="h6">{order.order_number}</Typography>
                     <Typography>Client : {order.customer.name}</Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {order.items.map((item) => `#${item.product_id} × ${item.quantity}`).join(', ')}
+                      {order.items.map((item) => `${item.product_name ?? `#${item.product_id}`} × ${item.quantity}`).join(', ')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Total : {order.total_price.toFixed(2)} €
@@ -232,6 +269,11 @@ export function KitchenPage() {
                     )}
                   </Stack>
                 </Stack>
+                {order.status === 'pending' && waitingMinutes >= 10 && (
+                  <Alert severity="warning" sx={{ mt: 2 }}>
+                    Cette commande attend depuis {waitingMinutes} minutes.
+                  </Alert>
+                )}
               </Paper>
             )
           })}

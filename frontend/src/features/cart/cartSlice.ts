@@ -21,6 +21,11 @@ const cartSlice = createSlice({
         return
       }
 
+      const cartRestaurantId = state.items[0]?.product.restaurant_id
+      if (cartRestaurantId && cartRestaurantId !== product.restaurant_id) {
+        return
+      }
+
       const line = state.items.find(
         (item) => item.product.id === product.id
       )

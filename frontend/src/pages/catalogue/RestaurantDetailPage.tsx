@@ -1,36 +1,32 @@
-import {
-  Box,
-  Button,
-  Chip,
-  Stack,
-  Typography,
-} from '@mui/material'
+import { useEffect, useState } from 'react'
+import { Box, Button, Chip, CircularProgress, Stack, Typography } from '@mui/material'
 import { Link, useParams } from 'react-router-dom'
-
-const restaurants = [
-  {
-    id: 1,
-    name: 'Ytasty Burger',
-    city: 'Paris',
-    address: '12 rue de la Pizza',
-    opening_hours: '12:00 - 22:00',
-    contact: '01 23 45 67 89',
-    is_open: true,
-  },
-  {
-    id: 2,
-    name: 'Crousty Grill',
-    city: 'Lyon',
-    address: '8 avenue du Pain',
-    opening_hours: '11:30 - 21:30',
-    contact: '04 56 78 90 12',
-    is_open: true,
-  },
-]
+import { getRestaurant } from '../../api/restaurants.api'
+import { useAppDispatch } from '../../app/hooks'
+import { selectRestaurant } from '../../features/restaurant/restaurantSlice'
+import type { Restaurant } from '../../types/api'
 
 export function RestaurantDetailPage() {
   const { id } = useParams()
-  const restaurant = restaurants.find((item) => item.id === Number(id))
+  const dispatch = useAppDispatch()
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!id || Number.isNaN(Number(id))) {
+      setLoading(false)
+      return
+    }
+
+    getRestaurant(Number(id))
+      .then((response) => setRestaurant(response.data))
+      .catch(() => setRestaurant(null))
+      .finally(() => setLoading(false))
+  }, [id])
+
+  if (loading) {
+    return <CircularProgress />
+  }
 
   if (!restaurant) {
     return (
@@ -60,8 +56,8 @@ export function RestaurantDetailPage() {
       </Stack>
 
       <Stack direction="row" spacing={2}>
-        <Button component={Link} to="/menu" variant="contained">
-          Voir le menu
+        <Button component={Link} to="/menu" variant="contained" onClick={() => dispatch(selectRestaurant(restaurant.id))} disabled={!restaurant.is_open}>
+          {restaurant.is_open ? 'Choisir et voir le menu' : 'Restaurant fermé'}
         </Button>
 
         <Button component={Link} to="/restaurants" variant="outlined">

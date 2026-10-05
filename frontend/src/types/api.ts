@@ -27,6 +27,7 @@ export interface Product {
 export interface OrderItem {
   product_id: number
   quantity: number
+  product_name?: string
 }
 
 export interface Customer {

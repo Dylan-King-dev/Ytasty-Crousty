@@ -11,7 +11,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { login } from '../../api/auth.api'
 import { useAppDispatch } from '../../app/hooks'
-import { setToken } from '../../features/auth/authSlice'
+import { setCredentials } from '../../features/auth/authSlice'
 import { selectRestaurant } from '../../features/restaurant/restaurantSlice'
 
 export function LoginPage() {
@@ -28,7 +28,14 @@ export function LoginPage() {
 
     try {
       const response = await login(username, password)
-      dispatch(setToken(response.data.access_token))
+      localStorage.setItem('ytasty_access_token', response.data.access_token)
+      localStorage.setItem('ytasty_username', username)
+      localStorage.setItem('ytasty_role', response.data.role)
+      dispatch(setCredentials({
+        token: response.data.access_token,
+        username,
+        role: response.data.role,
+      }))
       if (response.data.restaurant_id !== null) {
         dispatch(selectRestaurant(response.data.restaurant_id))
       }
@@ -58,6 +65,7 @@ export function LoginPage() {
               label="Nom d'utilisateur"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              inputProps={{ maxLength: 12 }}
               fullWidth
               required
             />
