@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import {
   AppBar,
   Box,
@@ -16,12 +16,8 @@ import type { SelectChangeEvent } from '@mui/material'
 import { Link } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../app/hooks'
 import { selectRestaurant } from '../../features/restaurant/restaurantSlice'
-
-const restaurants = [
-  { id: 1, name: 'Aix-en-Provence', is_open: true },
-  { id: 2, name: 'Lyon', is_open: true },
-  { id: 3, name: 'Paris', is_open: false },
-]
+import { getRestaurants } from '../../api/restaurants.api'
+import type { Restaurant } from '../../types/api'
 
 interface AppLayoutProps {
   children: ReactNode
@@ -31,10 +27,22 @@ export function AppLayout({ children }: AppLayoutProps) {
   const dispatch = useAppDispatch()
   const selectedId = useAppSelector((state) => state.restaurant.selectedId)
   const cartItems = useAppSelector((state) => state.cart.items)
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0)
 
-  const activeRestaurant =
-    restaurants.find((restaurant) => restaurant.id === selectedId) ?? restaurants[0]
+  useEffect(() => {
+    getRestaurants()
+      .then((response) => setRestaurants(response.data))
+      .catch(() => setRestaurants([]))
+  }, [])
+
+  useEffect(() => {
+    if (restaurants.length > 0 && !restaurants.some((restaurant) => restaurant.id === selectedId)) {
+      dispatch(selectRestaurant(restaurants[0].id))
+    }
+  }, [dispatch, restaurants, selectedId])
+
+  const activeRestaurant = restaurants.find((restaurant) => restaurant.id === selectedId)
 
   const handleRestaurantChange = (event: SelectChangeEvent<number>) => {
     dispatch(selectRestaurant(Number(event.target.value)))
@@ -62,9 +70,10 @@ export function AppLayout({ children }: AppLayoutProps) {
             <InputLabel id="restaurant-select-label">Restaurant</InputLabel>
             <Select
               labelId="restaurant-select-label"
-              value={selectedId}
+              value={restaurants.some((restaurant) => restaurant.id === selectedId) ? selectedId : ''}
               label="Restaurant"
               onChange={handleRestaurantChange}
+              disabled={restaurants.length === 0}
             >
               {restaurants.map((restaurant) => (
                 <MenuItem key={restaurant.id} value={restaurant.id}>
@@ -74,11 +83,13 @@ export function AppLayout({ children }: AppLayoutProps) {
             </Select>
           </FormControl>
 
-          <Chip
-            label={activeRestaurant.is_open ? 'Ouvert' : 'Fermé'}
-            color={activeRestaurant.is_open ? 'success' : 'error'}
-            size="small"
-          />
+          {activeRestaurant && (
+            <Chip
+              label={activeRestaurant.is_open ? 'Ouvert' : 'Fermé'}
+              color={activeRestaurant.is_open ? 'success' : 'error'}
+              size="small"
+            />
+          )}
 
           <Button color="inherit" component={Link} to="/">
             Accueil

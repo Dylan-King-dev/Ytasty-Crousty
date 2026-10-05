@@ -2,75 +2,58 @@ import {
   Box,
   Button,
   Chip,
+  CircularProgress,
   Stack,
   Typography,
 } from '@mui/material'
+import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { getProduct } from '../../api/products.api'
 import { useAppDispatch } from '../../app/hooks'
 import { addItem } from '../../features/cart/cartSlice'
 import type { Product } from '../../types/api'
-
-const products: Product[] = [
-  {
-    id: 1,
-    name: 'Burger classique',
-    image:
-      'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80',
-    description: 'Burger avec fromage, salade et sauce maison.',
-    category: 'burger',
-    price: 12.5,
-    is_available: true,
-    restaurant_id: 1,
-    ingredients: ['pain', 'steak', 'fromage', 'salade'],
-  },
-  {
-    id: 2,
-    name: 'Pizza Margherita',
-    image:
-      'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80',
-    description: 'Pizza tomate, mozzarella et basilic.',
-    category: 'pizza',
-    price: 14.0,
-    is_available: true,
-    restaurant_id: 1,
-    ingredients: ['tomate', 'mozzarella', 'basilic'],
-  },
-  {
-    id: 3,
-    name: 'Wrap poulet',
-    image:
-      'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?auto=format&fit=crop&w=800&q=80',
-    description: 'Wrap léger avec poulet, légumes et sauce.',
-    category: 'wrap',
-    price: 10.5,
-    is_available: true,
-    restaurant_id: 1,
-    ingredients: ['poulet', 'salad', 'wrap'],
-  },
-  {
-    id: 4,
-    name: 'Frites maison',
-    image:
-      'https://images.unsplash.com/photo-1576106678348-9c0d5b41f2c1?auto=format&fit=crop&w=800&q=80',
-    description: 'Frites croustillantes servies chaudes.',
-    category: 'accompagnement',
-    price: 4.5,
-    is_available: true,
-    restaurant_id: 1,
-    ingredients: ['pommes de terre', 'sel'],
-  },
-]
 
 export function ProductDetailPage() {
   const { id } = useParams()
   const dispatch = useAppDispatch()
 
-  const product = products.find((item) => item.id === Number(id))
+  const [product, setProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  if (!product) {
+  useEffect(() => {
+    const productId = Number(id)
+
+    if (!id || Number.isNaN(productId)) {
+      setError('Produit introuvable.')
+      setLoading(false)
+      return
+    }
+
+    getProduct(productId)
+      .then((response) => {
+        setProduct(response.data)
+      })
+      .catch(() => {
+        setError('Impossible de charger ce produit.')
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }, [id])
+
+  if (loading) {
+    return (
+      <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  if (error || !product) {
     return (
       <Box sx={{ p: 4 }}>
-        <Typography variant="h5">Produit introuvable</Typography>
+        <Typography variant="h5">{error ?? 'Produit introuvable'}</Typography>
       </Box>
     )
   }
@@ -103,6 +86,10 @@ export function ProductDetailPage() {
             {product.price.toFixed(2)} €
           </Typography>
 
+          {!product.is_available && (
+            <Chip label="Indisponible" color="error" sx={{ mb: 2 }} />
+          )}
+
           <Typography sx={{ mb: 2 }}>{product.description}</Typography>
 
           <Stack direction="row" spacing={1} sx={{ mb: 3, flexWrap: 'wrap' }}>
@@ -115,8 +102,9 @@ export function ProductDetailPage() {
             variant="contained"
             size="large"
             onClick={() => dispatch(addItem(product))}
+            disabled={!product.is_available}
           >
-            Ajouter au panier
+            {product.is_available ? 'Ajouter au panier' : 'Produit indisponible'}
           </Button>
         </Box>
       </Stack>

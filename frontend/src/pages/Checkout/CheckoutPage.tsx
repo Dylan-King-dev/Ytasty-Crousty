@@ -13,6 +13,7 @@ import {
 } from '@mui/material'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { createOrder } from '../../api/orders.api'
 import { useAppDispatch, useAppSelector } from '../../app/hooks'
 import { clearCart } from '../../features/cart/cartSlice'
 
@@ -24,6 +25,8 @@ export function CheckoutPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [pickupMode, setPickupMode] = useState<'takeaway' | 'onsite'>('takeaway')
+  const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const subtotal = items.reduce(
     (total, item) => total + item.product.price * item.quantity,
@@ -33,35 +36,47 @@ export function CheckoutPage() {
   const delivery = items.length === 0 ? 0 : 2.5
   const total = subtotal + delivery
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
 
     if (items.length === 0) {
       return
     }
 
-    const orderNumber = `YT-${Date.now().toString().slice(-6)}`
-
-    const order = {
-      order_number: orderNumber,
-      restaurant_id: items[0].product.restaurant_id,
-      created_at: new Date().toISOString(),
-      items: items.map((line) => ({
-        product_id: line.product.id,
-        quantity: line.quantity,
-      })),
-      total_price: total,
-      status: 'pending',
-      pickup_mode: pickupMode,
-      customer: {
-        name,
-        email,
-      },
+    if (!name.trim() || !email.trim()) {
+      setError('Merci de remplir le nom et l’email.')
+      return
     }
 
-    localStorage.setItem('ytasty_last_order', JSON.stringify(order))
-    dispatch(clearCart())
-    navigate(`/confirmation/${orderNumber}`)
+    setError('')
+    setIsSubmitting(true)
+
+    try {
+      const response = await createOrder({
+        restaurant_id: items[0].product.restaurant_id,
+        items: items.map((line) => ({
+          product_id: line.product.id,
+          quantity: line.quantity,
+        })),
+        pickup_mode: pickupMode,
+        customer: {
+          name: name.trim(),
+          email: email.trim(),
+        },
+      })
+
+      const createdOrder = response.data
+
+      localStorage.setItem('ytasty_last_order', JSON.stringify(createdOrder))
+      dispatch(clearCart())
+      navigate(`/confirmation/${createdOrder.order_number}`)
+    } catch {
+      setError(
+        'Impossible de créer la commande. Vérifie que le restaurant est ouvert et que tous les produits sont disponibles.'
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (items.length === 0) {
@@ -92,6 +107,8 @@ export function CheckoutPage() {
         <Paper sx={{ flex: 2, p: 3 }}>
           <Box component="form" onSubmit={handleSubmit} noValidate>
             <Stack spacing={2}>
+              {error && <Alert severity="error">{error}</Alert>}
+
               <TextField
                 label="Nom"
                 value={name}
@@ -124,8 +141,13 @@ export function CheckoutPage() {
                 </Select>
               </FormControl>
 
-              <Button type="submit" variant="contained" size="large">
-                Valider la commande
+              <Button
+                type="submit"
+                variant="contained"
+                size="large"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Validation...' : 'Valider la commande'}
               </Button>
             </Stack>
           </Box>

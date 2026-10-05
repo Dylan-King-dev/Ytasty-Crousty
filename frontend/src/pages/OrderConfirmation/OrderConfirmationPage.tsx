@@ -1,38 +1,52 @@
 import { Box, Button, Paper, Stack, Typography } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-
-interface OrderFromStorage {
-  order_number: string
-  total_price: number
-  pickup_mode: 'onsite' | 'takeaway'
-  status: string
-  customer: {
-    name: string
-    email: string
-  }
-}
+import { getOrder } from '../../api/orders.api'
+import type { Order } from '../../types/api'
 
 export function OrderConfirmationPage() {
   const { orderNumber } = useParams()
-  const [order, setOrder] = useState<OrderFromStorage | null>(null)
+  const [order, setOrder] = useState<Order | null>(null)
 
   useEffect(() => {
-    const raw = localStorage.getItem('ytasty_last_order')
+    const loadOrder = async () => {
+      if (!orderNumber) {
+        const raw = localStorage.getItem('ytasty_last_order')
 
-    if (!raw) {
-      setOrder(null)
-      return
+        if (!raw) {
+          setOrder(null)
+          return
+        }
+
+        setOrder(JSON.parse(raw) as Order)
+        return
+      }
+
+      try {
+        const response = await getOrder(orderNumber)
+        const fetchedOrder = response.data
+
+        localStorage.setItem('ytasty_last_order', JSON.stringify(fetchedOrder))
+        setOrder(fetchedOrder)
+      } catch {
+        const raw = localStorage.getItem('ytasty_last_order')
+
+        if (!raw) {
+          setOrder(null)
+          return
+        }
+
+        const fallbackOrder = JSON.parse(raw) as Order
+
+        if (fallbackOrder.order_number === orderNumber) {
+          setOrder(fallbackOrder)
+        } else {
+          setOrder(null)
+        }
+      }
     }
 
-    const parsed = JSON.parse(raw) as OrderFromStorage
-
-    if (orderNumber && parsed.order_number !== orderNumber) {
-      setOrder(null)
-      return
-    }
-
-    setOrder(parsed)
+    loadOrder()
   }, [orderNumber])
 
   if (!order) {
@@ -81,7 +95,7 @@ export function OrderConfirmationPage() {
           </Typography>
 
           <Stack direction="row" spacing={2}>
-            <Button component={Link} to="/suivi" variant="contained">
+            <Button component={Link} to={`/suivi/${order.order_number}`} variant="contained">
               Suivre ma commande
             </Button>
 
