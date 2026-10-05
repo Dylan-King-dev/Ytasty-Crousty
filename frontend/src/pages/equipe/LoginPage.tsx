@@ -1,5 +1,80 @@
-import { Typography } from '@mui/material'
+import {
+  Alert,
+  Box,
+  Button,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { login } from '../../api/auth.api'
+import { useAppDispatch } from '../../app/hooks'
+import { setToken } from '../../features/auth/authSlice'
 
 export function LoginPage() {
-  return <Typography variant="h5">Connexion équipe</Typography>
+  const dispatch = useAppDispatch()
+  const navigate = useNavigate()
+
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setError('')
+
+    try {
+      const response = await login(username, password)
+      dispatch(setToken(response.data.access_token))
+      navigate('/cuisine')
+    } catch {
+      setError('Identifiants incorrects.')
+    }
+  }
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '60vh',
+      }}
+    >
+      <Paper sx={{ p: 4, width: '100%', maxWidth: 420 }}>
+        <Typography variant="h5" gutterBottom>
+          Connexion équipe
+        </Typography>
+
+        <Box component="form" onSubmit={handleSubmit}>
+          <Stack spacing={2}>
+            <TextField
+              label="Nom d'utilisateur"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              fullWidth
+              required
+            />
+
+            <TextField
+              label="Mot de passe"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              fullWidth
+              required
+            />
+
+            {error && <Alert severity="error">{error}</Alert>}
+
+            <Button type="submit" variant="contained" size="large">
+              Se connecter
+            </Button>
+          </Stack>
+        </Box>
+      </Paper>
+    </Box>
+  )
 }

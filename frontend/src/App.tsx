@@ -15,6 +15,7 @@ import { OrderTrackingPage } from './pages/OrderTracking/OrderTrackingPage'
 import { LoginPage } from './pages/equipe/LoginPage'
 import { KitchenPage } from './pages/equipe/KitchenPage'
 import { AdministrationPage } from './pages/equipe/AdministrationPage'
+import { RestaurantDetailPage } from './pages/catalogue/RestaurantDetailPage'
 
 export function App() {
   return (
@@ -35,6 +36,7 @@ export function App() {
             <Route path="/suivi" element={<OrderTrackingPage />} />
             <Route path="/cuisine" element={<ProtectedRoute><KitchenPage /></ProtectedRoute>} />
             <Route path="/administration" element={<ProtectedRoute><AdministrationPage /></ProtectedRoute>} />
+            <Route path="/restaurants/:id" element={<RestaurantDetailPage />} />
           </Routes>
         </AppLayout>
       </BrowserRouter>
