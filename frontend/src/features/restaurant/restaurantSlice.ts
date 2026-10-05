@@ -1,8 +1,16 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
+interface RestaurantState {
+  selectedId: number
+}
+
+const initialState: RestaurantState = {
+  selectedId: 1,
+}
+
 const restaurantSlice = createSlice({
   name: 'restaurant',
-  initialState: { selectedId: null as number | null },
+  initialState,
   reducers: {
     selectRestaurant(state, action: PayloadAction<number>) {
       state.selectedId = action.payload
