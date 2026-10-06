@@ -43,18 +43,19 @@ def create_user(
     return new_user
 
 
+@router.get("", response_model=List[UserResponse], status_code=status.HTTP_200_OK)
+def get_users(db: Session = Depends(get_db), current_admin=Depends(allow_admin)):
+    return db.query(User).all()
+
+
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_user(
-        user_id: int,
-        db: Session = Depends(get_db),
-        current_admin=Depends(allow_admin)
-):
+def delete_user(user_id: int, db: Session = Depends(get_db), current_admin=Depends(allow_admin)):
     user = db.query(User).filter(User.id == user_id).first()
-    if user is None:
+    if not user:
         raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
     if user.id == current_admin.id:
         raise HTTPException(status_code=400, detail="Vous ne pouvez pas supprimer votre propre compte.")
 
     db.delete(user)
     db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return None

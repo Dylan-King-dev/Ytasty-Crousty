@@ -9,7 +9,7 @@ from ytasty_crousty.modules.restaurants.models import Restaurant
 from ytasty_crousty.modules.products.models import Product
 from ytasty_crousty.modules.ordres.schemas import OrderCreate, OrderResponse, OrderStatusUpdate
 from ytasty_crousty.modules.auths.dependencies import allow_staff_admin_direction
-from ytasty_crousty.socketio_server import emit_order_status
+from ytasty_crousty.realtime import send_order_status
 
 router = APIRouter(tags=["Orders"])
 
@@ -84,7 +84,7 @@ def get_restaurant_orders(
 
 
 @router.patch("/orders/{order_number}/status", response_model=OrderResponse, status_code=status.HTTP_200_OK)
-def update_order_status(
+async def update_order_status(
         order_number: str,
         data: OrderStatusUpdate,
     background_tasks: BackgroundTasks,
@@ -101,16 +101,12 @@ def update_order_status(
     order.status = data.status
     db.commit()
     db.refresh(order)
-    background_tasks.add_task(
-        emit_order_status,
-        order.order_number,
-        order.status.value,
-    )
+    await send_order_status(order.order_number, data.status)
     return order
 
 
 @router.post("/orders/{order_number}/cancel", response_model=OrderResponse, status_code=status.HTTP_200_OK)
-def cancel_order(
+async def cancel_order(
         order_number: str,
     background_tasks: BackgroundTasks,
         db: Session = Depends(get_db),
@@ -126,9 +122,5 @@ def cancel_order(
     order.status = "cancelled"
     db.commit()
     db.refresh(order)
-    background_tasks.add_task(
-        emit_order_status,
-        order.order_number,
-        order.status.value,
-    )
+    await send_order_status(order.order_number, "cancelled")
     return order

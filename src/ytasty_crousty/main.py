@@ -2,6 +2,7 @@ import socketio
 
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
+import socketio
 
 from ytasty_crousty.seed import seed
 
@@ -10,7 +11,7 @@ from ytasty_crousty.modules.users.router import router as users_router
 from ytasty_crousty.modules.restaurants.router import router as restaurants_router
 from ytasty_crousty.modules.products.router import router as products_router
 from ytasty_crousty.modules.ordres.router import router as orders_router
-from ytasty_crousty.socketio_server import sio
+from ytasty_crousty.realtime import sio
 
 fastapi_app = FastAPI(
     title="Ytasty Crousty API",
@@ -34,10 +35,12 @@ def startup_event():
 def health_check():
     return {"status": "ok"}
 
-fastapi_app.include_router(auth_router)
-fastapi_app.include_router(users_router)
-fastapi_app.include_router(restaurants_router)
-fastapi_app.include_router(products_router)
-fastapi_app.include_router(orders_router)
+# Enregistrement des différents modules (Routes)
+app.include_router(auth_router)
+app.include_router(users_router)
+app.include_router(restaurants_router)
+app.include_router(products_router)
+app.include_router(orders_router)
 
-app = socketio.ASGIApp(sio, other_asgi_app=fastapi_app)
+# Socket.io : on enveloppe l'API pour gérer aussi le temps réel sur le même port
+app = socketio.ASGIApp(sio, other_asgi_app=app)

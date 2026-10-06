@@ -1,4 +1,4 @@
-import enum 
+import enum
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, Numeric, DateTime, ForeignKey, Enum
 from sqlalchemy.orm import relationship
@@ -26,7 +26,6 @@ class Order(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     total_price = Column(Numeric(10, 2), nullable=False)
 
-    # Corrections apportées ici :
     status = Column(Enum(OrderStatusEnum), nullable=False, default=OrderStatusEnum.pending)
     pickup_mode = Column(Enum(PickupModeEnum), nullable=False)
 
@@ -35,8 +34,8 @@ class Order(Base):
 
     restaurant = relationship("Restaurant", back_populates="orders")
     items = relationship("OrderItem", back_populates="order")
-    @property
 
+    @property
     def customer(self):
         """Regroupe nom et email pour correspondre au schéma OrderResponse."""
         return {"name": self.customer_name, "email": self.customer_email}
@@ -55,4 +54,5 @@ class OrderItem(Base):
 
     @property
     def product_name(self):
-        return self.product.name
+        """Nom du produit, pour l'afficher en cuisine sans requête en plus."""
+        return self.product.name if self.product else None

@@ -26,6 +26,16 @@ export function LoginPage() {
     event.preventDefault()
     setError('')
 
+    // Mêmes règles que le backend
+    if (!/^[a-zA-Z0-9]{8,12}$/.test(username)) {
+      setError("L'identifiant doit contenir 8 à 12 lettres ou chiffres.")
+      return
+    }
+    if (!/^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{12,64}$/.test(password)) {
+      setError('Le mot de passe doit contenir 12 à 64 caractères, une majuscule, un chiffre et un caractère spécial.')
+      return
+    }
+
     try {
       const response = await login(username, password)
       const fullName = `${response.data.first_name} ${response.data.last_name}`
@@ -49,47 +59,47 @@ export function LoginPage() {
   }
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '60vh',
-      }}
-    >
-      <Paper sx={{ p: 4, width: '100%', maxWidth: 420 }}>
-        <Typography variant="h5" gutterBottom>
-          Connexion équipe
-        </Typography>
+      <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '60vh',
+          }}
+      >
+        <Paper sx={{ p: 4, width: '100%', maxWidth: 420 }}>
+          <Typography variant="h5" gutterBottom>
+            Connexion équipe
+          </Typography>
 
-        <Box component="form" onSubmit={handleSubmit}>
-          <Stack spacing={2}>
-            <TextField
-              label="Nom d'utilisateur"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              inputProps={{ maxLength: 12 }}
-              fullWidth
-              required
-            />
+          <Box component="form" onSubmit={handleSubmit}>
+            <Stack spacing={2}>
+              <TextField
+                  label="Nom d'utilisateur"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  inputProps={{ maxLength: 12 }}
+                  fullWidth
+                  required
+              />
 
-            <TextField
-              label="Mot de passe"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              fullWidth
-              required
-            />
+              <TextField
+                  label="Mot de passe"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  fullWidth
+                  required
+              />
 
-            {error && <Alert severity="error">{error}</Alert>}
+              {error && <Alert severity="error">{error}</Alert>}
 
-            <Button type="submit" variant="contained" size="large">
-              Se connecter
-            </Button>
-          </Stack>
-        </Box>
-      </Paper>
-    </Box>
+              <Button type="submit" variant="contained" size="large">
+                Se connecter
+              </Button>
+            </Stack>
+          </Box>
+        </Paper>
+      </Box>
   )
 }
