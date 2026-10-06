@@ -34,6 +34,10 @@ export function HomePage() {
         <Button component={Link} to="/panier" variant="outlined" size="large">
           Voir le panier
         </Button>
+
+        <Button component={Link} to="/suivi" variant="outlined" size="large">
+          Suivre une commande
+        </Button>
       </Stack>
 
       <Typography variant="h5" sx={{ mt: 5, mb: 2 }}>Nos restaurants</Typography>

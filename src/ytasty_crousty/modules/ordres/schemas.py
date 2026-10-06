@@ -30,6 +30,7 @@ class OrderStatusUpdate(BaseModel):
 class OrderItemResponse(BaseModel):
     product_id: int
     quantity: int
+    product_name: str
 
 class CustomerResponse(BaseModel):
     name: str

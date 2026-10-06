@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
+from typing import List
 
 from ytasty_crousty.database import get_db
 from ytasty_crousty.modules.users.models import User
@@ -8,6 +9,14 @@ from ytasty_crousty.modules.auths.dependencies import allow_admin
 from ytasty_crousty.modules.auths.security import hash_password
 
 router = APIRouter(prefix="/users", tags=["Users"])
+
+
+@router.get("", response_model=List[UserResponse], status_code=status.HTTP_200_OK)
+def get_users(
+        db: Session = Depends(get_db),
+        current_admin=Depends(allow_admin)
+):
+    return db.query(User).order_by(User.id).all()
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=UserResponse)
@@ -32,3 +41,20 @@ def create_user(
     db.commit()
     db.refresh(new_user)
     return new_user
+
+
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(
+        user_id: int,
+        db: Session = Depends(get_db),
+        current_admin=Depends(allow_admin)
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
+    if user.id == current_admin.id:
+        raise HTTPException(status_code=400, detail="Vous ne pouvez pas supprimer votre propre compte.")
+
+    db.delete(user)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

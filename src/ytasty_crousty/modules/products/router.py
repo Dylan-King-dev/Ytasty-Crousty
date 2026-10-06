@@ -5,7 +5,7 @@ from typing import List, Optional
 from ytasty_crousty.database import get_db
 from ytasty_crousty.modules.products.models import Product
 from ytasty_crousty.modules.products.schemas import ProductResponse, ProductCreate, ProductAvailability
-from ytasty_crousty.modules.auths.dependencies import allow_staff_admin_direction
+from ytasty_crousty.modules.auths.dependencies import allow_staff_admin
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -42,7 +42,7 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
 def create_product(
         product: ProductCreate,
         db: Session = Depends(get_db),
-        current_user=Depends(allow_staff_admin_direction)
+        current_user=Depends(allow_staff_admin)
 ):
     if current_user.role.value == "staff" and current_user.restaurant_id != product.restaurant_id:
         raise HTTPException(status_code=403, detail="Vous ne pouvez créer des produits que pour votre restaurant.")
@@ -59,7 +59,7 @@ def update_product(
         product_id: int,
         data: ProductCreate,
         db: Session = Depends(get_db),
-        current_user=Depends(allow_staff_admin_direction)
+        current_user=Depends(allow_staff_admin)
 ):
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
@@ -83,7 +83,7 @@ def update_product_availability(
         product_id: int,
         data: ProductAvailability,
         db: Session = Depends(get_db),
-        current_user=Depends(allow_staff_admin_direction)
+        current_user=Depends(allow_staff_admin)
 ):
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
@@ -102,7 +102,7 @@ def update_product_availability(
 def delete_product(
         product_id: int,
         db: Session = Depends(get_db),
-        current_user=Depends(allow_staff_admin_direction)
+        current_user=Depends(allow_staff_admin)
 ):
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:

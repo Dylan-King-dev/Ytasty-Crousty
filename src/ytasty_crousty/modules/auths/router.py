@@ -17,6 +17,10 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str
+    role: str
+    restaurant_id: int | None
+    first_name: str
+    last_name: str
 
 
 @router.post("/login", response_model=TokenResponse, status_code=status.HTTP_200_OK)
@@ -39,4 +43,11 @@ def login(credentials: LoginRequest, db: Session = Depends(get_db)):
         expires_delta=access_token_expires
     )
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "role": role_value,
+        "restaurant_id": user.restaurant_id,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+    }
