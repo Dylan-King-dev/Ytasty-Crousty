@@ -27,6 +27,7 @@ export interface Product {
 export interface OrderItem {
   product_id: number
   quantity: number
+  product_name?: string
 }
 
 export interface Customer {
@@ -73,6 +74,8 @@ export interface TokenResponse {
   token_type: string
   role: Role
   restaurant_id: number | null
+  first_name: string
+  last_name: string
 }
 
 export interface UserCreate {
@@ -80,6 +83,15 @@ export interface UserCreate {
   last_name: string
   username: string
   password: string
+  role: Role
+  restaurant_id: number | null
+}
+
+export interface UserResponse {
+  id: number
+  first_name: string
+  last_name: string
+  username: string
   role: Role
   restaurant_id: number | null
 }

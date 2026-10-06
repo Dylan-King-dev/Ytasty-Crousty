@@ -25,6 +25,7 @@ export function ProductListPage() {
 
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [products, setProducts] = useState<Product[]>([])
+  const [visibleProducts, setVisibleProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [search, setSearch] = useState('')
@@ -40,6 +41,7 @@ export function ProductListPage() {
   useEffect(() => {
     setLoading(true)
     setError(false)
+    setProducts([])
 
     getProducts({ restaurant_id: selectedRestaurantId })
       .then((response) => setProducts(response.data))
@@ -50,6 +52,42 @@ export function ProductListPage() {
       .finally(() => setLoading(false))
   }, [selectedRestaurantId])
 
+  useEffect(() => {
+    let active = true
+    const timeout = window.setTimeout(() => {
+      setLoading(true)
+      setError(false)
+
+      getProducts({
+        restaurant_id: selectedRestaurantId,
+        q: search.trim() || undefined,
+        category: selectedCategory === 'all' ? undefined : selectedCategory,
+        is_available: showAvailableOnly ? true : undefined,
+      })
+        .then((response) => {
+          if (active) {
+            setVisibleProducts(response.data)
+          }
+        })
+        .catch(() => {
+          if (active) {
+            setVisibleProducts([])
+            setError(true)
+          }
+        })
+        .finally(() => {
+          if (active) {
+            setLoading(false)
+          }
+        })
+    }, 250)
+
+    return () => {
+      active = false
+      window.clearTimeout(timeout)
+    }
+  }, [selectedRestaurantId, search, selectedCategory, showAvailableOnly])
+
   const selectedRestaurant = restaurants.find(
     (restaurant) => restaurant.id === selectedRestaurantId,
   )
@@ -58,27 +96,6 @@ export function ProductListPage() {
     () => ['all', ...new Set(products.map((product) => product.category))],
     [products],
   )
-
-  const visibleProducts = useMemo(() => {
-    return products.filter((product) => {
-      const matchesSearch = product.name
-        .toLowerCase()
-        .includes(search.toLowerCase())
-
-      const matchesCategory =
-        selectedCategory === 'all' ||
-        product.category.toLowerCase() === selectedCategory.toLowerCase()
-
-      const matchesAvailability =
-        !showAvailableOnly || product.is_available
-
-      return (
-        matchesSearch &&
-        matchesCategory &&
-        matchesAvailability
-      )
-    })
-  }, [search, selectedCategory, showAvailableOnly, products])
 
   return (
     <Box sx={{ p: 4 }}>
@@ -165,14 +182,25 @@ export function ProductListPage() {
                       {product.name}
                     </Typography>
 
-                    {!product.is_available && (
-                      <Chip label="Indisponible" color="error" size="small" />
-                    )}
+                    <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                      <Chip label={product.category} color="primary" size="small" />
+                      <Chip
+                        label={product.is_available ? 'Disponible' : 'Indisponible'}
+                        color={product.is_available ? 'success' : 'error'}
+                        size="small"
+                      />
+                    </Stack>
                   </Stack>
 
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                     {product.description}
                   </Typography>
+
+                  <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+                    {product.ingredients.map((ingredient) => (
+                      <Chip key={ingredient} label={ingredient} size="small" variant="outlined" />
+                    ))}
+                  </Stack>
 
                   <Typography variant="subtitle1" fontWeight="bold">
                     {product.price.toFixed(2)} €

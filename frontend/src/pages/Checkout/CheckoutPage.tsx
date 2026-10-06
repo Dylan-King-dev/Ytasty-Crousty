@@ -3,17 +3,18 @@ import {
   Box,
   Button,
   FormControl,
-  InputLabel,
-  MenuItem,
+  FormControlLabel,
   Paper,
-  Select,
+  Radio,
+  RadioGroup,
   Stack,
   TextField,
   Typography,
 } from '@mui/material'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createOrder } from '../../api/orders.api'
+import { getRestaurant } from '../../api/restaurants.api'
 import { useAppDispatch, useAppSelector } from '../../app/hooks'
 import { clearCart } from '../../features/cart/cartSlice'
 
@@ -21,20 +22,32 @@ export function CheckoutPage() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const items = useAppSelector((state) => state.cart.items)
+  const restaurantId = items[0]?.product.restaurant_id
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [pickupMode, setPickupMode] = useState<'takeaway' | 'onsite'>('takeaway')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [restaurantOpen, setRestaurantOpen] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    if (!restaurantId) {
+      setRestaurantOpen(null)
+      return
+    }
+
+    getRestaurant(restaurantId)
+      .then((response) => setRestaurantOpen(response.data.is_open))
+      .catch(() => setRestaurantOpen(false))
+  }, [restaurantId])
 
   const subtotal = items.reduce(
     (total, item) => total + item.product.price * item.quantity,
     0
   )
 
-  const delivery = items.length === 0 ? 0 : 2.5
-  const total = subtotal + delivery
+  const total = subtotal
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -45,6 +58,11 @@ export function CheckoutPage() {
 
     if (!name.trim() || !email.trim()) {
       setError('Merci de remplir le nom et l’email.')
+      return
+    }
+
+    if (!restaurantOpen) {
+      setError('Ce restaurant est fermé. La commande est désactivée.')
       return
     }
 
@@ -105,9 +123,12 @@ export function CheckoutPage() {
         sx={{ mt: 3 }}
       >
         <Paper sx={{ flex: 2, p: 3 }}>
-          <Box component="form" onSubmit={handleSubmit} noValidate>
+          <Box component="form" onSubmit={handleSubmit}>
             <Stack spacing={2}>
               {error && <Alert severity="error">{error}</Alert>}
+              {restaurantOpen === false && (
+                <Alert severity="warning">Le restaurant est fermé. La commande est indisponible.</Alert>
+              )}
 
               <TextField
                 label="Nom"
@@ -126,26 +147,22 @@ export function CheckoutPage() {
                 fullWidth
               />
 
-              <FormControl fullWidth>
-                <InputLabel id="pickup-mode-label">Mode de retrait</InputLabel>
-                <Select
-                  labelId="pickup-mode-label"
+              <FormControl>
+                <Typography component="legend">Mode de retrait</Typography>
+                <RadioGroup
                   value={pickupMode}
-                  label="Mode de retrait"
-                  onChange={(e) =>
-                    setPickupMode(e.target.value as 'takeaway' | 'onsite')
-                  }
+                  onChange={(event) => setPickupMode(event.target.value as 'takeaway' | 'onsite')}
                 >
-                  <MenuItem value="takeaway">À emporter</MenuItem>
-                  <MenuItem value="onsite">Sur place</MenuItem>
-                </Select>
+                  <FormControlLabel value="takeaway" control={<Radio />} label="À emporter" />
+                  <FormControlLabel value="onsite" control={<Radio />} label="Sur place" />
+                </RadioGroup>
               </FormControl>
 
               <Button
                 type="submit"
                 variant="contained"
                 size="large"
-                disabled={isSubmitting}
+                disabled={isSubmitting || restaurantOpen !== true}
               >
                 {isSubmitting ? 'Validation...' : 'Valider la commande'}
               </Button>
@@ -162,11 +179,6 @@ export function CheckoutPage() {
             <Stack direction="row" justifyContent="space-between">
               <Typography>Sous-total</Typography>
               <Typography>{subtotal.toFixed(2)} €</Typography>
-            </Stack>
-
-            <Stack direction="row" justifyContent="space-between">
-              <Typography>Livraison</Typography>
-              <Typography>{delivery.toFixed(2)} €</Typography>
             </Stack>
 
             <Stack direction="row" justifyContent="space-between">

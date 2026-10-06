@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   Button,
   Chip,
@@ -9,15 +10,18 @@ import {
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { getProduct } from '../../api/products.api'
-import { useAppDispatch } from '../../app/hooks'
+import { getRestaurant } from '../../api/restaurants.api'
+import { useAppDispatch, useAppSelector } from '../../app/hooks'
 import { addItem } from '../../features/cart/cartSlice'
 import type { Product } from '../../types/api'
 
 export function ProductDetailPage() {
   const { id } = useParams()
   const dispatch = useAppDispatch()
+  const selectedRestaurantId = useAppSelector((state) => state.restaurant.selectedId)
 
   const [product, setProduct] = useState<Product | null>(null)
+  const [restaurantOpen, setRestaurantOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -31,8 +35,10 @@ export function ProductDetailPage() {
     }
 
     getProduct(productId)
-      .then((response) => {
+      .then(async (response) => {
         setProduct(response.data)
+        const restaurantResponse = await getRestaurant(response.data.restaurant_id)
+        setRestaurantOpen(restaurantResponse.data.is_open)
       })
       .catch(() => {
         setError('Impossible de charger ce produit.')
@@ -57,6 +63,10 @@ export function ProductDetailPage() {
       </Box>
     )
   }
+
+  const canOrder = product.is_available
+    && restaurantOpen
+    && product.restaurant_id === selectedRestaurantId
 
   return (
     <Box sx={{ p: 4 }}>
@@ -89,6 +99,14 @@ export function ProductDetailPage() {
           {!product.is_available && (
             <Chip label="Indisponible" color="error" sx={{ mb: 2 }} />
           )}
+          {!restaurantOpen && (
+            <Chip label="Restaurant fermé" color="error" sx={{ mb: 2 }} />
+          )}
+          {product.restaurant_id !== selectedRestaurantId && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              Ce produit appartient à un autre restaurant. Change le restaurant sélectionné avant de l’ajouter.
+            </Alert>
+          )}
 
           <Typography sx={{ mb: 2 }}>{product.description}</Typography>
 
@@ -102,9 +120,9 @@ export function ProductDetailPage() {
             variant="contained"
             size="large"
             onClick={() => dispatch(addItem(product))}
-            disabled={!product.is_available}
+            disabled={!canOrder}
           >
-            {product.is_available ? 'Ajouter au panier' : 'Produit indisponible'}
+            {canOrder ? 'Ajouter au panier' : 'Commande indisponible'}
           </Button>
         </Box>
       </Stack>

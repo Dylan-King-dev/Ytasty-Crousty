@@ -35,7 +35,7 @@ export function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/suivi" element={<OrderTrackingPage />} />
             <Route path="/cuisine" element={<ProtectedRoute><KitchenPage /></ProtectedRoute>} />
-            <Route path="/administration" element={<ProtectedRoute><AdministrationPage /></ProtectedRoute>} />
+            <Route path="/administration" element={<ProtectedRoute allowedRoles={['staff', 'admin', 'direction']}><AdministrationPage /></ProtectedRoute>} />
             <Route path="/restaurants/:id" element={<RestaurantDetailPage />} />
           </Routes>
         </AppLayout>

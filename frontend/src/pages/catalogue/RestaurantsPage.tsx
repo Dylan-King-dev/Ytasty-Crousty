@@ -66,7 +66,7 @@ export function RestaurantsPage() {
                 <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
                   <Button
                     component={Link}
-                    to="/menu"
+                    to={`/restaurants/${restaurant.id}`}
                     variant="contained"
                     size="small"
                   >
