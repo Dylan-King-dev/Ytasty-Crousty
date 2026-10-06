@@ -68,19 +68,29 @@ def seed_users(db):
         for restaurant in db.query(Restaurant).all()
     }
     demo_users = [
-        ("Alice", "Martin", "staff_aix", RoleEnum.staff, "Ytasty@123", "Ytasty Crousty Aix"),
-        ("Lucas", "Bernard", "staff_paris", RoleEnum.staff, "Ytasty@123", "Ytasty Crousty Paris"),
-        ("Emma", "Petit", "staff_lyon", RoleEnum.staff, "Ytasty@123", "Ytasty Crousty Lyon"),
-        ("Camille", "Durand", "direction", RoleEnum.direction, "Ytasty@123", None),
-        ("Admin", "Ytasty", "admin123", RoleEnum.admin, "Admin@123456", None),
+        ("Alice", "Martin", "staffaix", "staff_aix", RoleEnum.staff, "Ytasty@12345", "Ytasty Crousty Aix"),
+        ("Lucas", "Bernard", "staffparis", "staff_paris", RoleEnum.staff, "Ytasty@12345", "Ytasty Crousty Paris"),
+        ("Emma", "Petit", "stafflyon", "staff_lyon", RoleEnum.staff, "Ytasty@12345", "Ytasty Crousty Lyon"),
+        ("Camille", "Durand", "direction", None, RoleEnum.direction, "Ytasty@12345", None),
+        ("Admin", "Ytasty", "admin123", None, RoleEnum.admin, "Admin@123456", None),
     ]
 
-    for first_name, last_name, username, role, password, restaurant_name in demo_users:
+    for first_name, last_name, username, legacy_username, role, password, restaurant_name in demo_users:
+        restaurant_id = restaurants.get(restaurant_name) if restaurant_name else None
         existing = db.query(User).filter(User.username == username).first()
+
+        if existing is None and legacy_username:
+            existing = db.query(User).filter(User.username == legacy_username).first()
+
         if existing:
+            existing.first_name = first_name
+            existing.last_name = last_name
+            existing.username = username
+            existing.hashed_password = hash_password(password)
+            existing.role = role
+            existing.restaurant_id = restaurant_id
             continue
 
-        restaurant_id = restaurants.get(restaurant_name) if restaurant_name else None
         db.add(
             User(
                 first_name=first_name,

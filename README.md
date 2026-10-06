@@ -94,7 +94,7 @@ Il crée les trois restaurants demandés par le projet :
 * Ytasty Crousty Paris
 * Ytasty Crousty Lyon
 
-Des comptes de démonstration sont également prévus : `staff_aix`, `staff_paris` et `staff_lyon` (mot de passe `Ytasty@123`), un compte direction (`direction` / `Ytasty@123`) et l'administrateur initial (`admin123` / `Admin@123456`).
+Des comptes de démonstration sont également prévus : `staffaix`, `staffparis` et `stafflyon` (mot de passe `Ytasty@12345`), un compte direction (`direction` / `Ytasty@12345`) et l'administrateur initial (`admin123` / `Admin@123456`).
 
 > Les identifiants présents dans le fichier `seed.py` sont destinés à l'environnement de développement et doivent être modifiés avant toute utilisation en production.
 
