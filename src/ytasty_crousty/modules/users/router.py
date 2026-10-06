@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -9,6 +9,14 @@ from ytasty_crousty.modules.auths.dependencies import allow_admin
 from ytasty_crousty.modules.auths.security import hash_password
 
 router = APIRouter(prefix="/users", tags=["Users"])
+
+
+@router.get("", response_model=List[UserResponse], status_code=status.HTTP_200_OK)
+def get_users(
+        db: Session = Depends(get_db),
+        current_admin=Depends(allow_admin)
+):
+    return db.query(User).order_by(User.id).all()
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=UserResponse)

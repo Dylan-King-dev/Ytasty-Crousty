@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import uuid
@@ -87,6 +87,7 @@ def get_restaurant_orders(
 async def update_order_status(
         order_number: str,
         data: OrderStatusUpdate,
+    background_tasks: BackgroundTasks,
         db: Session = Depends(get_db),
         current_user=Depends(allow_staff_admin_direction)
 ):
@@ -107,6 +108,7 @@ async def update_order_status(
 @router.post("/orders/{order_number}/cancel", response_model=OrderResponse, status_code=status.HTTP_200_OK)
 async def cancel_order(
         order_number: str,
+    background_tasks: BackgroundTasks,
         db: Session = Depends(get_db),
         current_user=Depends(allow_staff_admin_direction)
 ):

@@ -47,4 +47,5 @@ class RoleChecker:
 
 # Instances prêtes à être importées dans vos routeurs (ex: Depends(allow_admin))
 allow_admin = RoleChecker(["admin"])
+allow_staff_admin = RoleChecker(["admin", "staff"])
 allow_staff_admin_direction = RoleChecker(["admin", "staff", "direction"])

@@ -57,7 +57,8 @@ Les routes communes sont déclarées dans `frontend/src/App.tsx` : `/restaurants
 * Étudiant 1 maintient les types et appels Restaurants/Produits. Les étudiants 2 et 3 réutilisent `Product` au lieu de créer une copie.
 * Étudiant 2 maintient `CartLine`, les reducers du panier et le parcours de commande client.
 * Étudiant 3 maintient les types/règles d'authentification et les pages métier. Les contrôles de rôle côté frontend améliorent l'interface, mais ne remplacent jamais ceux du backend.
-* Socket.io est un travail commun : avant de coder, choisir l'option, le nom de l'événement, les données envoyées et l'identifiant de commande/restaurant utilisé. Aucun événement n'est encore standardisé.
+* Cas Socket.IO choisi : **Option B, suivi client interactif**. Le client rejoint une room avec `order:join` et `{ "order_number": "..." }`, puis quitte avec `order:leave` et le même contenu.
+* Le serveur envoie `order:status` avec `{ "order_number": "...", "status": "..." }` à la connexion et après chaque changement de statut enregistré par l'API. Le numéro de commande identifie la room ; seules les informations de suivi y sont diffusées.
 
 ---
 
@@ -70,6 +71,7 @@ Les routes communes sont déclarées dans `frontend/src/App.tsx` : `/restaurants
 * **PostgreSQL 15** — système de gestion de base de données
 * **Pydantic** — validation et gestion des données
 * **Passlib / bcrypt** — hachage et vérification des mots de passe
+* **Socket.IO** — suivi de commande en temps réel
 * **Docker** — conteneurisation de l'application
 * **Docker Compose** — orchestration de l'API et de la base de données
 * **uv** — gestion des dépendances et de l'environnement Python
@@ -86,13 +88,13 @@ src/ytasty_crousty/seed.py
 
 permet d'initialiser la base de données.
 
-Il crée notamment plusieurs restaurants de démonstration :
+Il crée les trois restaurants demandés par le projet :
 
 * Ytasty Crousty Aix
 * Ytasty Crousty Paris
 * Ytasty Crousty Lyon
 
-Un compte administrateur initial est également prévu pour le développement.
+Des comptes de démonstration sont également prévus : `staff_aix`, `staff_paris` et `staff_lyon` (mot de passe `Ytasty@123`), un compte direction (`direction` / `Ytasty@123`) et l'administrateur initial (`admin123` / `Admin@123456`).
 
 > Les identifiants présents dans le fichier `seed.py` sont destinés à l'environnement de développement et doivent être modifiés avant toute utilisation en production.
 
@@ -163,6 +165,28 @@ L'API est accessible sur :
 ```text
 http://localhost:8000
 ```
+
+### Frontend React
+
+Dans un second terminal :
+
+```bash
+cd frontend
+npm install
+```
+
+Copier `frontend/.env.example` vers `frontend/.env`, puis lancer Vite :
+
+```bash
+npm run dev
+```
+
+`VITE_API_URL` permet de choisir l'URL de l'API ; par défaut, elle vaut `http://localhost:8000`.
+Le frontend est accessible sur `http://localhost:5173`.
+
+### Administration des comptes
+
+Les administrateurs peuvent consulter et créer des comptes avec `GET /users` et `POST /users`, puis supprimer un autre compte avec `DELETE /users/{user_id}`. Le compte administrateur connecté ne peut pas se supprimer lui-même.
 
 ---
 
