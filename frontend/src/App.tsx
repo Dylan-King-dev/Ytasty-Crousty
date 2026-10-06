@@ -19,27 +19,27 @@ import { RestaurantDetailPage } from './pages/catalogue/RestaurantDetailPage'
 
 export function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <BrowserRouter>
-        <AppLayout>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/restaurants" element={<RestaurantsPage />} />
-            <Route path="/menu" element={<ProductListPage />} />
-            <Route path="/produit/:id" element={<ProductDetailPage />} />
-            <Route path="/panier" element={<CartPage />} />
-            <Route path="/commande" element={<CheckoutPage />} />
-            <Route path="/confirmation/:orderNumber" element={<OrderConfirmationPage />} />
-            <Route path="/suivi/:orderNumber" element={<OrderTrackingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/suivi" element={<OrderTrackingPage />} />
-            <Route path="/cuisine" element={<ProtectedRoute><KitchenPage /></ProtectedRoute>} />
-            <Route path="/administration" element={<ProtectedRoute allowedRoles={['staff', 'admin', 'direction']}><AdministrationPage /></ProtectedRoute>} />
-            <Route path="/restaurants/:id" element={<RestaurantDetailPage />} />
-          </Routes>
-        </AppLayout>
-      </BrowserRouter>
-    </ThemeProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <BrowserRouter>
+          <AppLayout>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/restaurants" element={<RestaurantsPage />} />
+              <Route path="/menu" element={<ProductListPage />} />
+              <Route path="/produit/:id" element={<ProductDetailPage />} />
+              <Route path="/panier" element={<CartPage />} />
+              <Route path="/commande" element={<CheckoutPage />} />
+              <Route path="/confirmation/:orderNumber" element={<OrderConfirmationPage />} />
+              <Route path="/suivi/:orderNumber" element={<OrderTrackingPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/suivi" element={<OrderTrackingPage />} />
+              <Route path="/cuisine" element={<ProtectedRoute allowedRoles={['staff', 'admin', 'direction']}><KitchenPage /></ProtectedRoute>} />
+              <Route path="/administration" element={<ProtectedRoute allowedRoles={['staff', 'admin', 'direction']}><AdministrationPage /></ProtectedRoute>} />
+              <Route path="/restaurants/:id" element={<RestaurantDetailPage />} />
+            </Routes>
+          </AppLayout>
+        </BrowserRouter>
+      </ThemeProvider>
   )
 }

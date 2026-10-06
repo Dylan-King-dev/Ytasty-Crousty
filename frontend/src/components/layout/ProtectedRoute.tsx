@@ -16,7 +16,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   }
 
   if (allowedRoles && (!role || !allowedRoles.includes(role))) {
-    return <Navigate to="/cuisine" replace />
+    return <Navigate to="/" replace />
   }
 
   return children
