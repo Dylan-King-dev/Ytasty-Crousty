@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field
-from typing import List, Literal
+from typing import List, Literal, Optional
 from datetime import datetime
 
 # ==========================================
@@ -30,6 +30,7 @@ class OrderStatusUpdate(BaseModel):
 class OrderItemResponse(BaseModel):
     product_id: int
     quantity: int
+    product_name: Optional[str] = None
 
 class CustomerResponse(BaseModel):
     name: str
