@@ -1,8 +1,9 @@
-import { Box, Button, Paper, Stack, Typography } from '@mui/material'
+import { Box, Button, Divider, Paper, Stack, Typography } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getOrder } from '../../api/orders.api'
 import type { Order } from '../../types/api'
+import { OrderStepper } from '../../components/orders/OrderStepper'
 
 export function OrderConfirmationPage() {
   const { orderNumber } = useParams()
@@ -73,13 +74,26 @@ export function OrderConfirmationPage() {
 
       <Paper sx={{ p: 3, mt: 2 }}>
         <Stack spacing={2}>
-          <Typography>
-            <strong>Numéro :</strong> {order.order_number}
-          </Typography>
+          <Box>
+            <Typography variant="overline">Numéro de commande</Typography>
+            <Typography variant="h3" color="primary.main" fontWeight="bold">
+              {order.order_number}
+            </Typography>
+          </Box>
 
           <Typography>
             <strong>Statut :</strong> {order.status}
           </Typography>
+          <OrderStepper status={order.status} />
+
+          <Divider />
+          <Typography variant="h6">Récapitulatif des articles</Typography>
+          {order.items.map((item) => (
+            <Stack key={item.product_id} direction="row" justifyContent="space-between">
+              <Typography>{item.product_name ?? `Produit #${item.product_id}`}</Typography>
+              <Typography>× {item.quantity}</Typography>
+            </Stack>
+          ))}
 
           <Typography>
             <strong>Mode :</strong>{' '}

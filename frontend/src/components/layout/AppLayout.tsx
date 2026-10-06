@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import {
   AppBar,
+  Avatar,
   Box,
   Button,
   Chip,
@@ -8,6 +9,7 @@ import {
   FormControl,
   InputLabel,
   MenuItem,
+  Stack,
   Select,
   Toolbar,
   Typography,
@@ -29,15 +31,21 @@ export function AppLayout({ children }: AppLayoutProps) {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const selectedId = useAppSelector((state) => state.restaurant.selectedId)
-  const { token, username, role } = useAppSelector((state) => state.auth)
+  const { token, username, fullName, role } = useAppSelector((state) => state.auth)
   const cartItems = useAppSelector((state) => state.cart.items)
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0)
 
   useEffect(() => {
-    getRestaurants()
-      .then((response) => setRestaurants(response.data))
-      .catch(() => setRestaurants([]))
+    const refreshRestaurants = () => {
+      getRestaurants()
+        .then((response) => setRestaurants(response.data))
+        .catch(() => setRestaurants([]))
+    }
+
+    refreshRestaurants()
+    window.addEventListener('ytasty:restaurants-updated', refreshRestaurants)
+    return () => window.removeEventListener('ytasty:restaurants-updated', refreshRestaurants)
   }, [])
 
   useEffect(() => {
@@ -68,6 +76,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const handleLogout = () => {
     localStorage.removeItem('ytasty_access_token')
     localStorage.removeItem('ytasty_username')
+    localStorage.removeItem('ytasty_full_name')
     localStorage.removeItem('ytasty_role')
     dispatch(logout())
     navigate('/')
@@ -131,7 +140,20 @@ export function AppLayout({ children }: AppLayoutProps) {
 
           {token ? (
             <>
-              <Chip label={`${username} · ${role}`} size="small" />
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Avatar sx={{ width: 32, height: 32 }}>
+                  {(fullName ?? username ?? '?').slice(0, 1).toUpperCase()}
+                </Avatar>
+                <Box>
+                  <Typography variant="body2" fontWeight="bold">
+                    {fullName ?? username}
+                  </Typography>
+                  <Chip
+                    label={role === 'admin' ? 'Administrateur' : role === 'staff' ? 'Employé' : 'Direction'}
+                    size="small"
+                  />
+                </Box>
+              </Stack>
               {role === 'staff' && (
                 <Button color="inherit" component={Link} to="/cuisine">
                   Cuisine

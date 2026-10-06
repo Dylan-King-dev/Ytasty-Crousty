@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
   FormControl,
   FormControlLabel,
@@ -19,9 +20,9 @@ import {
 } from '@mui/material'
 import { useAppSelector } from '../../app/hooks'
 import { createProduct, deleteProduct, getProducts, updateProduct, updateProductAvailability } from '../../api/products.api'
-import { getRestaurants, updateRestaurantAvailability } from '../../api/restaurants.api'
-import { createUser } from '../../api/users.api'
-import type { Product, ProductPayload, Restaurant, Role, UserCreate } from '../../types/api'
+import { getRestaurants, updateRestaurant, updateRestaurantAvailability } from '../../api/restaurants.api'
+import { createUser, deleteUser, getUsers } from '../../api/users.api'
+import type { Product, ProductPayload, Restaurant, Role, UserCreate, UserResponse } from '../../types/api'
 
 interface ProductForm {
   name: string
@@ -44,15 +45,17 @@ const emptyProductForm: ProductForm = {
 }
 
 export function AdministrationPage() {
-  const role = useAppSelector((state) => state.auth.role)
+  const { role, username: currentUsername } = useAppSelector((state) => state.auth)
   const selectedRestaurantId = useAppSelector((state) => state.restaurant.selectedId)
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [products, setProducts] = useState<Product[]>([])
+  const [users, setUsers] = useState<UserResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [editingProductId, setEditingProductId] = useState<number | null>(null)
   const [productForm, setProductForm] = useState<ProductForm>(emptyProductForm)
+  const [restaurantForm, setRestaurantForm] = useState({ address: '', contact: '' })
   const [userForm, setUserForm] = useState({
     first_name: '',
     last_name: '',
@@ -63,10 +66,13 @@ export function AdministrationPage() {
   })
 
   useEffect(() => {
-    Promise.all([getRestaurants(), getProducts()])
-      .then(([restaurantResponse, productResponse]) => {
+    Promise.all([getRestaurants(), getProducts(), ...(role === 'admin' ? [getUsers()] : [])])
+      .then(([restaurantResponse, productResponse, userResponse]) => {
         setRestaurants(restaurantResponse.data)
         setProducts(productResponse.data)
+        if (userResponse) {
+          setUsers(userResponse.data)
+        }
       })
       .catch(() => setError('Impossible de charger les données de gestion.'))
       .finally(() => setLoading(false))
@@ -75,7 +81,18 @@ export function AdministrationPage() {
   const selectedProducts = products.filter(
     (product) => product.restaurant_id === selectedRestaurantId,
   )
+  const selectedRestaurant = restaurants.find(
+    (restaurant) => restaurant.id === selectedRestaurantId,
+  )
   const isAdmin = role === 'admin'
+  const canManageAvailability = isAdmin || role === 'staff'
+
+  useEffect(() => {
+    setRestaurantForm({
+      address: selectedRestaurant?.address ?? '',
+      contact: selectedRestaurant?.contact ?? '',
+    })
+  }, [selectedRestaurant?.id, selectedRestaurant?.address, selectedRestaurant?.contact])
 
   const changeProductAvailability = async (product: Product) => {
     try {
@@ -96,6 +113,27 @@ export function AdministrationPage() {
       setError('')
     } catch {
       setError('Seul un administrateur peut modifier l’ouverture des restaurants.')
+    }
+  }
+
+  const saveRestaurant = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!selectedRestaurant) {
+      return
+    }
+
+    try {
+      const response = await updateRestaurant(
+        selectedRestaurant.id,
+        restaurantForm.address.trim(),
+        restaurantForm.contact.trim(),
+      )
+      setRestaurants((current) => current.map((item) => item.id === response.data.id ? response.data : item))
+      window.dispatchEvent(new Event('ytasty:restaurants-updated'))
+      setMessage('Informations du restaurant enregistrées.')
+      setError('')
+    } catch {
+      setError('Impossible de modifier les informations du restaurant.')
     }
   }
 
@@ -163,6 +201,15 @@ export function AdministrationPage() {
 
   const addUser = async (event: React.FormEvent) => {
     event.preventDefault()
+    if (!/^[a-zA-Z0-9]{8,12}$/.test(userForm.username.trim())) {
+      setError('L’identifiant doit contenir 8 à 12 lettres ou chiffres.')
+      return
+    }
+    if (!/^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{12,64}$/.test(userForm.password)) {
+      setError('Le mot de passe doit contenir 12 à 64 caractères, une majuscule, un chiffre et un caractère spécial.')
+      return
+    }
+
     const user: UserCreate = {
       ...userForm,
       first_name: userForm.first_name.trim(),
@@ -171,7 +218,8 @@ export function AdministrationPage() {
       restaurant_id: userForm.role === 'staff' ? Number(userForm.restaurant_id) : null,
     }
     try {
-      await createUser(user)
+      const response = await createUser(user)
+      setUsers((current) => [...current, response.data])
       setMessage(`Compte ${user.username} créé.`)
       setError('')
       setUserForm({
@@ -184,6 +232,21 @@ export function AdministrationPage() {
       })
     } catch {
       setError('Impossible de créer le compte. Vérifie le nom (8 à 12 lettres/chiffres) et le mot de passe (12 caractères minimum).')
+    }
+  }
+
+  const removeUser = async (user: UserResponse) => {
+    if (!window.confirm(`Supprimer le compte ${user.username} ?`)) {
+      return
+    }
+
+    try {
+      await deleteUser(user.id)
+      setUsers((current) => current.filter((item) => item.id !== user.id))
+      setMessage(`Le compte ${user.username} a été supprimé.`)
+      setError('')
+    } catch {
+      setError('Impossible de supprimer ce compte.')
     }
   }
 
@@ -208,6 +271,33 @@ export function AdministrationPage() {
                 label={`${restaurant.city} : ${restaurant.is_open ? 'ouvert' : 'fermé'}`}
               />
             ))}
+          </Stack>
+        </Paper>
+      )}
+
+      {isAdmin && selectedRestaurant && (
+        <Paper component="form" onSubmit={saveRestaurant} sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Informations de {selectedRestaurant.city}
+          </Typography>
+          <Stack spacing={2}>
+            <TextField
+              label="Adresse"
+              value={restaurantForm.address}
+              onChange={(event) => setRestaurantForm({ ...restaurantForm, address: event.target.value })}
+              required
+              fullWidth
+            />
+            <TextField
+              label="Contact"
+              value={restaurantForm.contact}
+              onChange={(event) => setRestaurantForm({ ...restaurantForm, contact: event.target.value })}
+              required
+              fullWidth
+            />
+            <Button type="submit" variant="outlined" sx={{ alignSelf: 'flex-start' }}>
+              Enregistrer les informations
+            </Button>
           </Stack>
         </Paper>
       )}
@@ -265,10 +355,12 @@ export function AdministrationPage() {
                         <Typography variant="subtitle1" fontWeight="bold">{product.name}</Typography>
                         <Typography color="text.secondary">{product.category} · {product.price.toFixed(2)} €</Typography>
                       </Box>
-                      <FormControlLabel
-                        control={<Switch checked={product.is_available} onChange={() => changeProductAvailability(product)} />}
-                        label={product.is_available ? 'Disponible' : 'Rupture'}
-                      />
+                      {canManageAvailability && (
+                        <FormControlLabel
+                          control={<Switch checked={product.is_available} onChange={() => changeProductAvailability(product)} />}
+                          label={product.is_available ? 'Disponible' : 'Rupture'}
+                        />
+                      )}
                     </Stack>
                     {isAdmin && (
                       <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
@@ -285,6 +377,7 @@ export function AdministrationPage() {
       </Paper>
 
       {isAdmin && (
+        <Stack spacing={3}>
         <Paper component="form" onSubmit={addUser} sx={{ p: 3 }}>
           <Typography variant="h6" gutterBottom>Créer un compte équipe</Typography>
           <Grid container spacing={2}>
@@ -319,6 +412,36 @@ export function AdministrationPage() {
           </Grid>
           <Button type="submit" variant="contained" sx={{ mt: 2 }}>Créer le compte</Button>
         </Paper>
+        <Paper sx={{ p: 3 }}>
+          <Typography variant="h6" gutterBottom>Comptes de l’équipe</Typography>
+          <Stack spacing={1}>
+            {users.map((user) => (
+              <Stack
+                key={user.id}
+                direction={{ xs: 'column', sm: 'row' }}
+                alignItems={{ xs: 'flex-start', sm: 'center' }}
+                justifyContent="space-between"
+                spacing={1}
+                sx={{ py: 1, borderBottom: '1px solid', borderColor: 'divider' }}
+              >
+                <Box>
+                  <Typography fontWeight="bold">{user.first_name} {user.last_name}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {user.username} · {user.role}{user.restaurant_id ? ` · ${restaurants.find((restaurant) => restaurant.id === user.restaurant_id)?.city ?? ''}` : ''}
+                  </Typography>
+                </Box>
+                {user.username === currentUsername ? (
+                  <Chip label="Compte connecté" size="small" />
+                ) : (
+                  <Button color="error" size="small" onClick={() => removeUser(user)}>
+                    Supprimer le compte
+                  </Button>
+                )}
+              </Stack>
+            ))}
+          </Stack>
+        </Paper>
+        </Stack>
       )}
     </Box>
   )

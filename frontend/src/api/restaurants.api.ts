@@ -11,3 +11,7 @@ export function getRestaurant(id: number) {
 export function updateRestaurantAvailability(id: number, isOpen: boolean) {
   return api.patch(`/restaurants/${id}/availability`, { is_open: isOpen })
 }
+
+export function updateRestaurant(id: number, address: string, contact: string) {
+  return api.patch(`/restaurants/${id}`, { address, contact })
+}
